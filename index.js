@@ -123,9 +123,8 @@ function generateCookies(category) {
   return baseCookies;
 }
 
-// Human scroll simulation
 async function humanScroll(page, minTime = 5000, maxTime = 10000) {
-  // Scroll to the very bottom smoothly in steps
+  // Scroll to the very bottom in steps
   let hasMore = true;
   while (hasMore) {
     hasMore = await page.evaluate(() => {
@@ -139,18 +138,40 @@ async function humanScroll(page, minTime = 5000, maxTime = 10000) {
   // Wait a bit at the bottom
   await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
 
-  // Scroll to the top
-  await page.evaluate(() => window.scrollTo(0, 0));
+  // Slowly scroll to top
+  const scrollUpSteps = 10;
+  for (let i = 0; i < scrollUpSteps; i++) {
+    await page.evaluate(() => {
+      window.scrollBy(0, -window.innerHeight / 2);
+    });
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
+  }
+
+  // Pause before going to middle
   await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
 
-  // Scroll to somewhere in the middle
-  await page.evaluate(() => {
-    const mid = document.documentElement.scrollHeight / 2;
-    window.scrollTo(0, mid + Math.random() * 200 - 100); // ±100 pixels from middle
-  });
+  // Smooth scroll to middle
+  const scrollMidSteps = 5;
+  const midTarget = await page.evaluate(() => document.documentElement.scrollHeight / 2);
+  for (let i = 0; i < scrollMidSteps; i++) {
+    await page.evaluate((target, step, index) => {
+      const current = window.scrollY;
+      const targetStep = current + (target - current) / (step - index);
+      window.scrollTo(0, targetStep);
+    }, midTarget, scrollMidSteps, i);
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
+  }
 
   // Final pause
   await new Promise(resolve => setTimeout(resolve, Math.random() * (maxTime - minTime) + minTime));
+}
+
+function getCustomUserAgent() {
+  const isMobile = Math.random() < 0.45; // 35% chance
+  const userAgent = new UserAgent({
+    deviceCategory: isMobile ? 'mobile' : 'desktop',
+  });
+  return userAgent.toString();
 }
 
 async function run() {
@@ -160,7 +181,8 @@ async function run() {
     password: '5ab0012a5258b9d1',
   };
   const proxyHostPort = 'gw.dataimpulse.com:823';
-  const userAgent = new UserAgent();
+  const userAgent = getCustomUserAgent();
+  //new UserAgent();
   const category = getRandomFromArray(categories);
 
   const browser = await puppeteer.launch({
