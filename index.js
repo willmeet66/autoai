@@ -189,7 +189,7 @@ async function run() {
 
   // Human scroll + wait
   await humanScroll(page);
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 30000 + 40000));
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 40000 + 40000));
 
 
   // Click random article/post link
