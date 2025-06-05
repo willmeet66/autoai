@@ -164,7 +164,7 @@ async function run() {
   const category = getRandomFromArray(categories);
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     args: [`--proxy-server=${proxyHostPort}`, '--no-sandbox', '--disable-setuid-sandbox'],
   });
 
