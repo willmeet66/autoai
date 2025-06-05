@@ -183,9 +183,13 @@ async function run() {
     'upgrade-insecure-requests': '1',
   });
 
+  try {
   // Visit Google and search for your site
   await page.goto('https://www.google.com/url?q=https://www.technologymanias.com/&sa=U&ved=2ahUKEwi0qIaT_dqNAxUJIbkGHXFmGmUQFnoECAMQAg&usg=AOvVaw0FJzYvtyQ4bBeeZ0TKIj8V', { timeout: 0 });
- 
+ } catch (error) {
+  console.log('Navigation timeout, retrying...');
+  await page.goto('https://www.technologymanias.com/', { timeout: 0 });
+}
 
   // Human scroll + wait
   await humanScroll(page);
