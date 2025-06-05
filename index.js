@@ -225,21 +225,36 @@ async function run() {
     await new Promise(resolve => setTimeout(resolve, Math.random() * 40000 + 40000));
 
     console.log('Looking for all anchor links on the page...');
-    const anchors = await page.$$('a');
-    console.log(`Found ${anchors.length} anchor tags.`);
+    const links = await page.$$eval('a', anchors =>
+    anchors
+      .filter(a => a.offsetParent !== null && a.href && a.href !== '#')
+      .map((a, i) => ({ index: i, href: a.href }))
+    );
+    console.log(`Found ${links.length} anchor tags.`);
 
-    if (anchors.length > 0) {
-    console.log('Selecting a random anchor and clicking it...');
-    const randomAnchor = getRandomFromArray(anchors);
-
-    await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 60000 }),
-        randomAnchor.click()
-    ]);
-    console.log('Random anchor click successful and navigation complete.');
-    } else {
-    console.log('No anchor tags found to click.');
+    if (!links.length) {
+        console.log("No valid anchor elements found.");
+        return;
     }
+
+    const random = links[Math.floor(Math.random() * links.length)];
+    const handles = await page.$$('a');
+    const targetHandle = handles[random.index];
+
+    try {
+        await targetHandle.scrollIntoViewIfNeeded();
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+        // await page.waitForTimeout(500 + Math.random() * 500);
+        // await targetHandle.click({ delay: Math.random() * 200 + 100 });
+        await Promise.all([
+            page.waitForNavigation({ timeout: 15000, waitUntil: 'domcontentloaded' }),
+            targetHandle.click({ delay: 100 }),
+        ]);
+        console.log(`Clicked link: ${random.href}`);
+    } catch (err) {
+        console.error('Failed to click anchor:', err);
+    }
+    console.log('Random anchor click successful and navigation complete.');
 
     console.log('Starting second round of human scroll...');
     await humanScroll(page, 5000, 10000);
