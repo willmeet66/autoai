@@ -124,6 +124,7 @@ function generateCookies(category) {
 }
 
 async function humanScroll(page, minTime = 5000, maxTime = 10000) {
+    await page.waitForFunction(() => document && document.documentElement !== null);
   // Scroll to the very bottom in steps
   let hasMore = true;
   while (hasMore) {
