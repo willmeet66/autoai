@@ -196,10 +196,10 @@ async function run() {
   const anchors = await page.$$('a');
   if (anchors.length > 0) {
     const randomAnchor = getRandomFromArray(anchors);
-    await randomAnchor.click();
-    // await new Promise(resolve => setTimeout(resolve, 2000));
-    // await page.keyboard.press('Escape');
-    await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
+    await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 0 }),
+        randomAnchor.click()
+    ]);
   }
 
   await humanScroll(page, 5000, 10000);
