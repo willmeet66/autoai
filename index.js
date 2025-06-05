@@ -266,7 +266,7 @@ async function run() {
   await browser.close();
 
   // Wait random 5-10 sec then repeat whole process
-  const delay = Math.random() * 5000 + 5000;
+  const delay = Math.random() * 15000 + 5000;
   console.log(`Waiting ${delay.toFixed(0)}ms before repeating...`);
   await new Promise(res => setTimeout(res, delay));
 
