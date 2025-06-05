@@ -1,4 +1,4 @@
-name: Run index.js every 10 minutes
+name: AI 5
 
 on:
   # schedule:

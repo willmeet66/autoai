@@ -184,30 +184,45 @@ async function run() {
   });
 
   try {
-  // Visit Google and search for your site
-  await page.goto('https://www.google.com/url?q=https://www.technologymanias.com/&sa=U&ved=2ahUKEwi0qIaT_dqNAxUJIbkGHXFmGmUQFnoECAMQAg&usg=AOvVaw0FJzYvtyQ4bBeeZ0TKIj8V', { timeout: 0 });
- } catch (error) {
-  console.log('Navigation timeout, retrying...');
-  await page.goto('https://www.technologymanias.com/', { timeout: 0 });
-}
+    console.log('Navigating to Google redirect URL...');
+    await page.goto(
+        'https://www.google.com/url?q=https://www.technologymanias.com/&sa=U&ved=2ahUKEwi0qIaT_dqNAxUJIbkGHXFmGmUQFnoECAMQAg&usg=AOvVaw0FJzYvtyQ4bBeeZ0TKIj8V',
+        { timeout: 100000 }
+    );
+    console.log('Navigation to redirect URL successful.');
+    } catch (error) {
+    console.log('Navigation timeout or error at redirect URL. Retrying direct URL...');
+    await page.goto('https://www.technologymanias.com/', { timeout: 100000 });
+    console.log('Navigation to direct URL successful.');
+    }
 
-  // Human scroll + wait
-  await humanScroll(page);
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 40000 + 40000));
+    console.log('Starting human-like scroll...');
+    await humanScroll(page);
+    console.log('Initial human scroll complete. Waiting randomly between 40s–80s...');
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 40000 + 40000));
 
+    console.log('Looking for all anchor links on the page...');
+    const anchors = await page.$$('a');
+    console.log(`Found ${anchors.length} anchor tags.`);
 
-  // Click random article/post link
-  const anchors = await page.$$('a');
-  if (anchors.length > 0) {
+    if (anchors.length > 0) {
+    console.log('Selecting a random anchor and clicking it...');
     const randomAnchor = getRandomFromArray(anchors);
+
     await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 0 }),
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 60000 }),
         randomAnchor.click()
     ]);
-  }
+    console.log('Random anchor click successful and navigation complete.');
+    } else {
+    console.log('No anchor tags found to click.');
+    }
 
-  await humanScroll(page, 5000, 10000);
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 20000 + 40000));
+    console.log('Starting second round of human scroll...');
+    await humanScroll(page, 5000, 10000);
+    console.log('Second human scroll complete. Waiting randomly between 40s–60s...');
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 20000 + 40000));
+
 //   await page.waitForTimeout(Math.random() * 40000 + 40000);
 
   await browser.close();
