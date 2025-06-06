@@ -137,23 +137,23 @@ async function humanScroll(page, minTime = 5000, maxTime = 10000) {
   }
 
   // Wait a bit at the bottom
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 17000 + 500));
 
   // Slowly scroll to top
   const scrollUpSteps = 10;
   for (let i = 0; i < scrollUpSteps; i++) {
     await page.evaluate(() => {
-      window.scrollBy(0, -window.innerHeight / 2);
+      window.scrollBy(0, -window.innerHeight);
     });
     await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 200));
   }
 
   // Pause before going to middle
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 15000 + 500));
 
   // Smooth scroll to middle
   const scrollMidSteps = 5;
-  const midTarget = await page.evaluate(() => document.documentElement.scrollHeight / 2);
+  const midTarget = await page.evaluate(() => document.documentElement.scrollHeight * 0.25);
   for (let i = 0; i < scrollMidSteps; i++) {
     await page.evaluate((target, step, index) => {
       const current = window.scrollY;
@@ -187,7 +187,7 @@ async function run() {
   const category = getRandomFromArray(categories);
 
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     args: [`--proxy-server=${proxyHostPort}`, '--no-sandbox', '--disable-setuid-sandbox'],
   });
 
@@ -227,7 +227,7 @@ async function run() {
     console.log('Looking for all anchor links on the page...');
     const links = await page.$$eval('a', anchors =>
     anchors
-      .filter(a => a.offsetParent !== null && a.href && a.href !== '#')
+      .filter(a => a.offsetParent !== null && a.href && a.href !== '#' && a.href.startsWith('https://www.technologymanias.com'))
       .map((a, i) => ({ index: i, href: a.href }))
     );
     console.log(`Found ${links.length} anchor tags.`);
@@ -237,22 +237,62 @@ async function run() {
         return;
     }
 
+    const isMac = process.platform === 'darwin';
+    const modifierKey = isMac ? 'Meta' : 'Control';
+
     const random = links[Math.floor(Math.random() * links.length)];
     const handles = await page.$$('a');
     const targetHandle = handles[random.index];
 
     try {
-        await targetHandle.scrollIntoViewIfNeeded();
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
-        // await page.waitForTimeout(500 + Math.random() * 500);
-        // await targetHandle.click({ delay: Math.random() * 200 + 100 });
-        await Promise.all([
-            page.waitForNavigation({ timeout: 15000, waitUntil: 'domcontentloaded' }),
-            targetHandle.click({ delay: 100 }),
+    if (!targetHandle) throw new Error("No anchor found at selected index.");
+
+    await targetHandle.scrollIntoViewIfNeeded();
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+
+    const href = await targetHandle.evaluate(el => el.href);
+    console.log(`Opening link in new tab: ${href}`);
+
+   const [newPage] = await Promise.all([
+        new Promise(resolve => {
+            page.browser().once('targetcreated', async target => {
+            if (target.type() !== 'page') {
+                console.warn('Target is not a page:', target.type());
+                return resolve(null);
+            }
+
+            const newTab = await target.page();
+            if (!newTab) {
+                console.warn('Failed to get page from target.');
+                return resolve(null);
+            }
+
+            await newTab.bringToFront().catch(err => {
+                console.warn('Failed to bring new tab to front:', err.message);
+            });
+
+            resolve(newTab);
+            });
+        }),
+        targetHandle.click({ modifiers: [modifierKey], delay: 100 }),
         ]);
-        console.log(`Clicked link: ${random.href}`);
+
+
+    if (newPage) {
+        try {
+            await newPage.waitForNavigation({ timeout: 15000, waitUntil: 'domcontentloaded' });
+            console.log("New tab URL:", newPage.url());
+        } catch (err) {
+            console.warn("New tab navigation timeout or error:", err.message);
+        }
+        } else {
+        console.warn("New tab not opened or accessible.");
+        }
+
+    console.log("New tab URL:", newPage.url());
+
     } catch (err) {
-        console.error('Failed to click anchor:', err);
+    console.error('Failed to open anchor in new tab:', err);
     }
     console.log('Random anchor click successful and navigation complete.');
 
