@@ -10,7 +10,7 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 // Apply stealth plugin
 puppeteer.use(StealthPlugin());
 
-let current = Math.floor(Math.random() * 3893);;
+let current = Math.floor(Math.random() * 4270);;
 
 // Domain imports
 const insuranceDomains = require('./domains/insurance');
