@@ -5755,93 +5755,93 @@
   },
   {
     "proxy": "47.251.109.68:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 9137
   },
   {
     "proxy": "47.251.163.146:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 4066
   },
   {
     "proxy": "47.251.173.59:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.251.105.143:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.254.53.200:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.251.173.204:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.251.117.139:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 3953
   },
   {
     "proxy": "47.251.165.133:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.89.230.121:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.254.19.90:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 4012
   },
   {
     "proxy": "47.251.64.44:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 7506
   },
   {
     "proxy": "47.89.249.148:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 3838
   },
   {
     "proxy": "60.187.245.190:8085",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "57.129.81.201:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "Germany",
+    "latency": 5314
   },
   {
     "proxy": "47.88.56.117:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 4363
   },
   {
     "proxy": "47.251.50.243:3128",
