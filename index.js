@@ -10,6 +10,8 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 // Apply stealth plugin
 puppeteer.use(StealthPlugin());
 
+let current = 0;
+
 // Domain imports
 const insuranceDomains = require('./domains/insurance');
 const healthDomains = require('./domains/health');
@@ -190,25 +192,84 @@ async function visitRandomTechnologymaniasLinks(page, browser) {
     }
   }
 }
+function getNextStatus1Proxy(proxies) {
+  const total = proxies.length;
+  let count = 0;
 
-async function run() {
-  const proxyList = fs.readFileSync('proxies.txt', 'utf-8')
-    .split('\n')
-    .map(p => p.trim())
-    .filter(Boolean);
+  while (count < total) {
+    if (current >= total) current = 0; // wrap around
 
-  const proxy = getRandomFromArray(proxyList);
+    const proxyObj = proxies[current];
+    current++;
+
+    if (proxyObj.status === 1) {
+      return {
+        proxy: proxyObj.proxy,
+        latency: proxyObj.latency
+      };
+    }
+
+    count++;
+  }
+
+  throw new Error('No proxies with status 1 found');
+}
+function updateProxyStatus(proxies, targetProxy, newStatus, proxyJsonFile) {
+  // Find proxy index
+  const index = proxies.findIndex(p => p.proxy === targetProxy);
+  
+  if (index === -1) {
+    console.log(`Proxy "${targetProxy}" not found.`);
+    return false;
+  }
+
+  proxies[index].status = newStatus;
+
+  // Save updated JSON back to file
+  if(proxyJsonFile)
+  {
+  fs.writeFileSync(proxyJsonFile, JSON.stringify(proxies, proxies[index].country, newStatus, proxies[index].latency));
+  }
+  
+  console.log(`Updated proxy "${targetProxy}" status to ${newStatus}.`);
+  return true;
+}
+
+ async function run() {
+  const proxyJsonFile = 'proxies.json';
+  console.log('📁 Loading proxies from', proxyJsonFile);
+
+  const proxies = JSON.parse(fs.readFileSync(proxyJsonFile, 'utf-8'));
+
+  let proxy, latency;
+  try {
+    ({ proxy, latency } = getNextStatus1Proxy(proxies));
+  } catch (err) {
+    console.error('🚫 No available working proxies (status 1). Exiting.');
+    return;
+  }
+
+  console.log(`🌐 Using proxy: ${proxy}`);
+  console.log(`⏱️ Latency: ${latency ?? 'unknown'}ms`);
+
+  current = (current + 1) % proxies.length;
+
   const userAgent = getCustomUserAgent();
   const category = getRandomFromArray(categories);
   const cookies = generateCookies(category);
 
+  console.log(`🧠 Selected category: ${category}`);
+  console.log(`🕵️‍♂️ Using User-Agent: ${userAgent}`);
+
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     args: [`--proxy-server=${proxy}`, '--no-sandbox', '--disable-setuid-sandbox'],
   });
 
   try {
     const page = await browser.newPage();
+    console.log('🧭 Opening new page...');
+
     await page.setUserAgent(userAgent);
     await page.setCookie(...cookies);
     await page.setExtraHTTPHeaders({
@@ -217,21 +278,33 @@ async function run() {
       'upgrade-insecure-requests': '1',
     });
 
-    await page.goto('https://www.technologymanias.com/', { timeout: 60000 });
-    await humanScroll(page);
-    await new Promise(r => setTimeout(r, Math.random() * 40000 + 40000));
+    console.log('🚀 Navigating to technologymanias.com...');
+    await page.goto('https://www.technologymanias.com/', {
+      timeout: 60000 + (latency ?? 0),
+    });
 
+    console.log('📜 Scrolling through page like a human...');
+    await humanScroll(page);
+
+    console.log('🔗 Clicking random internal links...');
     await visitRandomTechnologymaniasLinks(page, browser);
+
+    updateProxyStatus(proxies, proxy, 3, proxyJsonFile); // Mark as processed
+    console.log('✅ Proxy marked as processed (status 3).');
 
   } catch (err) {
     console.error('❌ Error during navigation:', err.message);
+    updateProxyStatus(proxies, proxy, 2); // Mark as failed
+    console.log('❌ Proxy marked as failed (status 2).');
+
   } finally {
     await browser.close();
     const delay = Math.random() * 1500 + 500;
-    console.log(`Waiting ${delay.toFixed(0)}ms before next run...`);
+    console.log(`⏳ Waiting ${delay.toFixed(0)}ms before next run...`);
     await new Promise(r => setTimeout(r, delay));
-    return run();
+    return run(); // ⚠️ Caution: this is recursive and never ends
   }
 }
+
 
 run();

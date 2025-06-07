@@ -1,65 +1,102 @@
-const axios = require('axios');
-const { HttpProxyAgent } = require('http-proxy-agent'); // Correct constructor import
 const fs = require('fs');
+const puppeteer = require('puppeteer');
+const axios = require('axios');
+const path = require('path');
 
-const testUrl = 'http://www.technologymanias.com';
-const CONCURRENT_LIMIT = 20;
-const proxies = [];
+const proxyTxtFile = 'proxies.txt';
+const proxyJsonFile = 'proxies.json';
+const urlToTest = 'https://www.technologymanias.com';
 
-async function checkProxy(proxy) {
-  const trimmed = proxy.trim();
-  const agent = new HttpProxyAgent(`http://${trimmed}`);
+// Step 1: Load or create JSON proxy list
+let proxies = [];
+
+if (fs.existsSync(proxyJsonFile)) {
+  proxies = JSON.parse(fs.readFileSync(proxyJsonFile, 'utf8'));
+} else {
+  const proxyList = fs.readFileSync(proxyTxtFile, 'utf8').split('\n').map(p => p.trim()).filter(Boolean);
+  proxies = proxyList.map(proxy => ({
+    proxy,
+    status: 0, // 0 = not tested
+    country: null,
+    latency: null
+  }));
+  fs.writeFileSync(proxyJsonFile, JSON.stringify(proxies, null, 2));
+  console.log('✅ proxies.json created');
+}
+
+// Step 2: Get country from IP using ipapi.co
+async function getCountry(ip) {
+  try {
+    const response = await axios.get(`https://ipapi.co/${ip}/country_name/`, { timeout: 5000 });
+    return response.data.trim();
+  } catch (err) {
+    return null;
+  }
+}
+
+// Step 3: Test proxy with Puppeteer
+async function testProxy(proxyObj) {
+  const proxy = proxyObj.proxy;
+  console.log(`🔌 Trying proxy: ${proxy}`);
+
+  const proxyParts = proxy.match(/(?:(http:\/\/)?(.+?):(.+?)@)?(.+?):(\d+)/);
+  const hasAuth = proxyParts && proxyParts[2] && proxyParts[3];
+  const ip = proxyParts[4];
+
+  const args = [`--proxy-server=${ip}:${proxyParts[5]}`];
+
+  const start = Date.now();
+  let browser;
 
   try {
-    const start = Date.now();
-    const response = await axios.get(testUrl, {
-      httpAgent: agent,
-      timeout: 5000,
+    browser = await puppeteer.launch({
+      headless: true,
+      args,
+      timeout: 10000,
     });
-    const end = Date.now();
-    const latency = end - start;
 
-    if (response.status === 200) {
-      console.log(`✅ Working: ${trimmed} → IP: ${response.data.origin} → Latency: ${latency} ms`);
-      proxies.push(trimmed);
-      return true;
+    const page = await browser.newPage();
+
+    if (hasAuth) {
+      await page.authenticate({ username: proxyParts[2], password: proxyParts[3] });
     }
+
+    await page.goto(urlToTest, { waitUntil: 'domcontentloaded', timeout: 15000 });
+
+    const finalUrl = page.url();
+    const latency = Date.now() - start;
+
+    if (finalUrl.includes('technologymanias.com')) {
+      proxyObj.status = 1;
+      proxyObj.latency = latency;
+      proxyObj.country = await getCountry(ip);
+
+      console.log(`✅ Working proxy: ${proxy} | ${proxyObj.country} | ${latency}ms`);
+    } else {
+      console.warn(`⚠️ Unexpected redirect to: ${finalUrl}`);
+      proxyObj.status = 2;
+    }
+
+    await browser.close();
   } catch (err) {
-    console.log(`❌ Dead: ${trimmed}`);
+    proxyObj.status = 2;
+    proxyObj.latency = null;
+    proxyObj.country = null;
+    console.warn(`❌ Failed proxy: ${proxy} | Reason: ${err.message}`);
+    if (browser) await browser.close();
   }
-  return false;
+
+  // Save JSON after each test
+  fs.writeFileSync(proxyJsonFile, JSON.stringify(proxies, null, 2));
 }
 
-async function runChecker() {
-  const list = fs.readFileSync('proxies.txt', 'utf-8')
-    .split('\n')
-    .map(p => p.trim())
-    .filter(Boolean);
-
-  for (let i = 928; i < list.length; i += CONCURRENT_LIMIT) {
-    const batch = list.slice(i, i + CONCURRENT_LIMIT);
-    await Promise.all(batch.map(proxy => checkProxy(proxy)));
-
-    if (proxies.length > 0) {
-        // Read existing file content (if file doesn't exist, create an empty string)
-        let existing = '';
-        try {
-        existing = fs.readFileSync('working_proxies.txt', 'utf-8');
-        } catch (e) {}
-
-        const existingSet = new Set(existing.split('\n').map(p => p.trim()).filter(Boolean));
-        const newSet = new Set(proxies);
-
-        // Merge new proxies (avoiding duplicates)
-        const updated = Array.from(new Set([...existingSet, ...newSet]));
-
-        // Save back to file
-        fs.writeFileSync('working_proxies.txt', updated.join('\n'));
-
-        console.log(`\n✅ Total working proxies so far: ${updated.length}`);
-        proxies.length = 0; // Clear the array
+// Step 4: Run tests
+(async () => {
+  for (const proxy of proxies) {
+    if (proxy.status === 0) {
+      await testProxy(proxy);
     }
-    }
-}
+  }
 
-runChecker();
+  console.log('✅ Testing complete. Updated results saved to proxies.json');
+})();
