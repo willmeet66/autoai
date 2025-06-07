@@ -5845,37 +5845,37 @@
   },
   {
     "proxy": "47.251.50.243:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 6563
   },
   {
     "proxy": "47.251.127.150:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 4643
   },
   {
     "proxy": "5.134.48.59:8080",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.251.27.57:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
   {
     "proxy": "47.251.21.243:3128",
-    "status": 0,
-    "country": null,
-    "latency": null
+    "status": 1,
+    "country": "United States",
+    "latency": 10090
   },
   {
     "proxy": "47.251.172.36:3128",
-    "status": 0,
+    "status": 2,
     "country": null,
     "latency": null
   },
