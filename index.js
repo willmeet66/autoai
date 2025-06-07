@@ -203,7 +203,7 @@ async function run() {
   const cookies = generateCookies(category);
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     args: [`--proxy-server=${proxy}`, '--no-sandbox', '--disable-setuid-sandbox'],
   });
 
@@ -222,7 +222,7 @@ async function run() {
     await new Promise(r => setTimeout(r, Math.random() * 40000 + 40000));
 
     await visitRandomTechnologymaniasLinks(page, browser);
-    
+
   } catch (err) {
     console.error('❌ Error during navigation:', err.message);
   } finally {
